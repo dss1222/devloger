@@ -1,5 +1,5 @@
 plugins {
-    id("org.springframework.boot") version "3.1.5"
+    id("org.springframework.boot") version "3.2.3"
     id("io.spring.dependency-management") version "1.1.3"
     id("java")
 }
@@ -20,7 +20,7 @@ dependencyManagement {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.springframework.cloud:spring-cloud-starter-netflix-eureka-server:4.0.3")
+    implementation("org.springframework.cloud:spring-cloud-starter-netflix-eureka-server")
 }
 
 tasks.withType<org.springframework.boot.gradle.tasks.bundling.BootJar> {
