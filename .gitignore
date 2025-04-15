@@ -1,15 +1,53 @@
-# Gradle
+# ======================
+# Java & Gradle
+# ======================
 .gradle/
 build/
 bin/
 out/
+!gradle/wrapper/gradle-wrapper.jar
 
+# Gradle daemon logs
+.gradle/daemon/
+.gradle/caches/
+.gradle/notifications/
+.gradle/vcs-1/
+
+# Gradle generated files
+**/resolvedMainClassName
+**/.classpath
+**/.project
+**/.settings/
+
+# ======================
+# IntelliJ IDEA
+# ======================
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# ======================
 # VSCode
+# ======================
 .vscode/
 
-# IDE metadata
-*.iml
-.idea/
-
-# Reports
+# ======================
+# Logs & Reports
+# ======================
+*.log
 *.html
+*.xml
+*.report
+
+# ======================
+# OS-specific
+# ======================
+.DS_Store
+Thumbs.db
+
+# ======================
+# Environment
+# ======================
+.env
+*.env
