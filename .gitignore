@@ -1,0 +1,15 @@
+# Gradle
+.gradle/
+build/
+bin/
+out/
+
+# VSCode
+.vscode/
+
+# IDE metadata
+*.iml
+.idea/
+
+# Reports
+*.html
