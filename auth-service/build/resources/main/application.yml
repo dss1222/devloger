@@ -11,3 +11,7 @@ eureka:
     fetch-registry: true
     service-url:
       defaultZone: http://localhost:8761/eureka
+
+jwt:
+  secret: "devloger-secret-key-1234567890" # 길어야 안전함
+  expiration: 3600000 # 1시간 (ms 기준)
