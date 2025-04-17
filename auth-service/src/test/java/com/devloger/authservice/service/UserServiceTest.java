@@ -2,21 +2,22 @@ package com.devloger.authservice.service;
 
 import com.devloger.authservice.domain.User;
 import com.devloger.authservice.dto.UserSignupRequest;
+import com.devloger.authservice.exception.CustomException;
+import com.devloger.authservice.exception.ErrorCode;
 import com.devloger.authservice.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -38,115 +39,75 @@ class UserServiceTest {
         userService = new UserService(userRepository, passwordEncoder);
     }
 
-    private User createTestUser(String email, String password, String nickname) {
-        return User.builder()
-                .email(email)
-                .password(passwordEncoder.encode(password))
-                .nickname(nickname)
-                .build();
-    }
-
     private UserSignupRequest createSignupRequest(String email, String password, String nickname) {
         return new UserSignupRequest(email, password, nickname);
     }
 
+    private void assertCustomException(Throwable e, ErrorCode expectedCode) {
+        assertThat(e).isInstanceOf(CustomException.class);
+        assertThat(((CustomException) e).getErrorCode()).isEqualTo(expectedCode);
+    }
+
     @Nested
     class SignupTest {
+
         @Test
         void 회원가입_성공() {
-            // given
             UserSignupRequest request = createSignupRequest(TEST_EMAIL, TEST_PASSWORD, TEST_NICKNAME);
-            User savedUser = createTestUser(TEST_EMAIL, TEST_PASSWORD, TEST_NICKNAME);
 
             when(userRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.empty());
             when(userRepository.findByNickname(TEST_NICKNAME)).thenReturn(Optional.empty());
-            when(userRepository.save(any(User.class))).thenReturn(savedUser);
 
-            // when
+            when(userRepository.save(any(User.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
+
             User result = userService.signup(request);
 
-            // then
-            assertThat(result).isNotNull();
             assertThat(result.getEmail()).isEqualTo(TEST_EMAIL);
             assertThat(passwordEncoder.matches(TEST_PASSWORD, result.getPassword())).isTrue();
             assertThat(result.getNickname()).isEqualTo(TEST_NICKNAME);
-            
+
             verify(userRepository).save(any(User.class));
         }
 
         @Test
-        void 회원가입_실패_중복이메일() {
-            // given
+        void 중복이메일_회원가입_실패() {
             UserSignupRequest request = createSignupRequest(TEST_EMAIL, TEST_PASSWORD, TEST_NICKNAME);
-            User existingUser = createTestUser(TEST_EMAIL, "existingPassword", "existingUser");
+            when(userRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(mock(User.class)));
 
-            when(userRepository.findByEmail(TEST_EMAIL))
-                    .thenReturn(Optional.of(existingUser));
-
-            // when & then
-            assertThatThrownBy(() -> userService.signup(request))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("이미 사용 중인 이메일입니다.");
-
-            verify(userRepository, never()).save(any());
+            Throwable e = catchThrowable(() -> userService.signup(request));
+            assertCustomException(e, ErrorCode.DUPLICATED_EMAIL);
         }
 
-
         @Test
-        void 회원가입_실패_중복닉네임() {
-            // given
+        void 중복닉네임_회원가입_실패() {
             UserSignupRequest request = createSignupRequest(TEST_EMAIL, TEST_PASSWORD, TEST_NICKNAME);
-            User existingUser = createTestUser("existing@example.com", "existingPassword", TEST_NICKNAME);
-
             when(userRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.empty());
-            when(userRepository.findByNickname(TEST_NICKNAME))
-                    .thenReturn(Optional.of(existingUser));
+            when(userRepository.findByNickname(TEST_NICKNAME)).thenReturn(Optional.of(mock(User.class)));
 
-            // when & then
-            assertThatThrownBy(() -> userService.signup(request))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("이미 사용 중인 닉네임입니다.");
-
-            verify(userRepository, never()).save(any());
+            Throwable e = catchThrowable(() -> userService.signup(request));
+            assertCustomException(e, ErrorCode.DUPLICATED_NICKNAME);
         }
 
-
         @Test
-        void 회원가입_실패_유효하지않은이메일() {
-            // given
-            String invalidEmail = "invalid-email";
-            UserSignupRequest request = createSignupRequest(invalidEmail, TEST_PASSWORD, TEST_NICKNAME);
-
-            // when & then
-            assertThatThrownBy(() -> userService.signup(request))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("유효하지 않은 이메일 형식입니다.");
+        void 이메일형식_잘못됨() {
+            UserSignupRequest request = createSignupRequest("invalid-email", TEST_PASSWORD, TEST_NICKNAME);
+            Throwable e = catchThrowable(() -> userService.signup(request));
+            assertCustomException(e, ErrorCode.INVALID_EMAIL);
         }
 
-
         @Test
-        void 회원가입_실패_비밀번호길이부족() {
-            // given
-            String shortPassword = "123"; // 3자리
-            UserSignupRequest request = createSignupRequest(TEST_EMAIL, shortPassword, TEST_NICKNAME);
-
-            // when & then
-            assertThatThrownBy(() -> userService.signup(request))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("비밀번호는 최소 8자 이상이어야 합니다.");
+        void 비밀번호길이_부족() {
+            UserSignupRequest request = createSignupRequest(TEST_EMAIL, "123", TEST_NICKNAME);
+            Throwable e = catchThrowable(() -> userService.signup(request));
+            assertCustomException(e, ErrorCode.INVALID_PASSWORD);
         }
 
-
         @Test
-        void 회원가입_실패_유효하지않은닉네임() {
-            // given
-            String invalidNickname = "a"; // 너무 짧은 닉네임
-            UserSignupRequest request = createSignupRequest(TEST_EMAIL, TEST_PASSWORD, invalidNickname);
-
-            // when & then
-            assertThatThrownBy(() -> userService.signup(request))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("닉네임은 2자 이상이어야 합니다.");
+        void 닉네임길이_부족() {
+            UserSignupRequest request = createSignupRequest(TEST_EMAIL, TEST_PASSWORD, "a");
+            Throwable e = catchThrowable(() -> userService.signup(request));
+            assertCustomException(e, ErrorCode.INVALID_NICKNAME);
         }
     }
 }

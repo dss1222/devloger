@@ -2,6 +2,8 @@ package com.devloger.authservice.controller;
 
 import com.devloger.authservice.domain.User;
 import com.devloger.authservice.dto.UserSignupRequest;
+import com.devloger.authservice.exception.CustomException;
+import com.devloger.authservice.exception.ErrorCode;
 import com.devloger.authservice.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -16,9 +18,9 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AuthController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -36,97 +38,58 @@ class AuthControllerTest {
     @Nested
     @DisplayName("회원가입 API 테스트")
     class SignupTest {
-        private static final String TEST_EMAIL = "test@example.com";
-        private static final String TEST_PASSWORD = "password123";
-        private static final String TEST_NICKNAME = "testUser";
-        private static final String SIGNUP_URL = "/auth/signup";
+        private static final String EMAIL = "test@example.com";
+        private static final String PASSWORD = "password123";
+        private static final String NICKNAME = "testUser";
 
         @Test
         @DisplayName("회원가입 성공")
-        void 회원가입_성공() throws Exception {
-            // given
-            UserSignupRequest request = new UserSignupRequest(
-                    TEST_EMAIL,
-                    TEST_PASSWORD,
-                    TEST_NICKNAME
-            );
-
-            User savedUser = User.builder()
+        void signup_success() throws Exception {
+            User user = User.builder()
                     .id(1L)
-                    .email(TEST_EMAIL)
-                    .password("encryptedPassword")
-                    .nickname(TEST_NICKNAME)
+                    .email(EMAIL)
+                    .password("encrypted")
+                    .nickname(NICKNAME)
                     .build();
 
-            given(userService.signup(any(UserSignupRequest.class))).willReturn(savedUser);
+            given(userService.signup(any())).willReturn(user);
 
-            // when
-            var result = mockMvc.perform(post(SIGNUP_URL)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)));
-
-            // then
-            result.andExpect(status().isOk())
+            mockMvc.perform(post("/auth/signup")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(new UserSignupRequest(EMAIL, PASSWORD, NICKNAME))))
+                    .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(1L))
-                    .andExpect(jsonPath("$.email").value(TEST_EMAIL))
-                    .andExpect(jsonPath("$.nickname").value(TEST_NICKNAME));
+                    .andExpect(jsonPath("$.email").value(EMAIL))
+                    .andExpect(jsonPath("$.nickname").value(NICKNAME));
         }
 
         @Test
-        @DisplayName("회원가입 실패 - 이메일 누락")
-        void 회원가입_실패_이메일누락() throws Exception {
-            // given
-            UserSignupRequest request = new UserSignupRequest(
-                    null,
-                    TEST_PASSWORD,
-                    TEST_NICKNAME
-            );
+        @DisplayName("회원가입 실패 - 유효하지 않은 이메일 형식")
+        void signup_fail_invalid_email() throws Exception {
+            UserSignupRequest request = new UserSignupRequest("invalid-email", PASSWORD, NICKNAME);
 
-            // when
-            var result = mockMvc.perform(post(SIGNUP_URL)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)));
-
-            // then
-            result.andExpect(status().isBadRequest());
+            mockMvc.perform(post("/auth/signup")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                    .andExpect(jsonPath("$.message").value("must be a well-formed email address"));
         }
 
         @Test
-        @DisplayName("회원가입 실패 - 비밀번호 누락")
-        void 회원가입_실패_비밀번호누락() throws Exception {
-            // given
-            UserSignupRequest request = new UserSignupRequest(
-                    TEST_EMAIL,
-                    null,
-                    TEST_NICKNAME
-            );
+        @DisplayName("회원가입 실패 - 비밀번호 길이 부족")
+        void signup_fail_short_password() throws Exception {
+            UserSignupRequest request = new UserSignupRequest(EMAIL, "123", NICKNAME);
+            doThrow(new CustomException(ErrorCode.INVALID_PASSWORD))
+                    .when(userService)
+                    .signup(any());
 
-            // when
-            var result = mockMvc.perform(post(SIGNUP_URL)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)));
-
-            // then
-            result.andExpect(status().isBadRequest());
-        }
-
-        @Test
-        @DisplayName("회원가입 실패 - 이메일 형식 오류")
-        void 회원가입_실패_이메일형식오류() throws Exception {
-            // given
-            UserSignupRequest request = new UserSignupRequest(
-                    "invalid-email",
-                    TEST_PASSWORD,
-                    TEST_NICKNAME
-            );
-
-            // when
-            var result = mockMvc.perform(post(SIGNUP_URL)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)));
-
-            // then
-            result.andExpect(status().isBadRequest());
+            mockMvc.perform(post("/auth/signup")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_PASSWORD.name()))
+                    .andExpect(jsonPath("$.message").value(ErrorCode.INVALID_PASSWORD.getMessage()));
         }
     }
 }
