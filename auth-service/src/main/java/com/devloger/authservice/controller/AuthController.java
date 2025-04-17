@@ -1,38 +1,31 @@
 package com.devloger.authservice.controller;
 
-import com.devloger.authservice.util.JwtProvider;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import com.devloger.authservice.domain.User;
+import com.devloger.authservice.dto.UserSignupRequest;
+import com.devloger.authservice.dto.UserSignupResponse;
+import com.devloger.authservice.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequiredArgsConstructor
 @RequestMapping("/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
-    private final JwtProvider jwtProvider;
+    private final UserService userService;
 
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        if ("test@example.com".equals(request.getEmail()) && "1234".equals(request.getPassword())) {
-            String token = jwtProvider.createToken("user-1");
-            return ResponseEntity.ok(new LoginResponse(token));
-        }
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
-    }
-
-    @Getter
-    static class LoginRequest {
-        private String email;
-        private String password;
-    }
-
-    @Getter
-    @AllArgsConstructor
-    static class LoginResponse {
-        private String token;
+    @PostMapping("/signup")
+    @Operation(summary = "회원가입", description = "이메일, 비밀번호, 닉네임으로 회원가입 진행")
+    public ResponseEntity<UserSignupResponse> signup(@Valid @RequestBody UserSignupRequest request) {
+        User user = userService.signup(request);
+        UserSignupResponse response = UserSignupResponse.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .nickname(user.getNickname())
+                .build();
+        return ResponseEntity.ok(response);
     }
 }
