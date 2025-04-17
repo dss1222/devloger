@@ -5,6 +5,20 @@ spring:
   application:
     name: auth-service
 
+  datasource:
+    url: jdbc:mysql://localhost:3306/devloger_auth?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: 1234
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
 eureka:
   client:
     register-with-eureka: true
@@ -13,5 +27,5 @@ eureka:
       defaultZone: http://localhost:8761/eureka
 
 jwt:
-  secret: "devloger-secret-key-1234567890" # 길어야 안전함
+  secret: "devloger-super-secret-key-1234567890-jwt-secure-key!!" # 256비트 이상
   expiration: 3600000 # 1시간 (ms 기준)
