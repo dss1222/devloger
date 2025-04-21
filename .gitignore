@@ -6,6 +6,14 @@ build/
 bin/
 out/
 !gradle/wrapper/gradle-wrapper.jar
+/build/
+/**/build/
+/**/out/
+
+# JAR files
+*.jar
+*.war
+*.ear
 
 # Gradle daemon logs
 .gradle/daemon/
@@ -52,3 +60,4 @@ Thumbs.db
 .env
 *.env
 **/previous-compilation-data.bin
+
