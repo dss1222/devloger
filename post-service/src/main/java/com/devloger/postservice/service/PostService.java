@@ -3,8 +3,11 @@ package com.devloger.postservice.service;
 import com.devloger.postservice.domain.Post;
 import com.devloger.postservice.dto.PostCreateRequest;
 import com.devloger.postservice.dto.PostCreateResponse;
+import com.devloger.postservice.dto.PostSummaryResponse;
 import com.devloger.postservice.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -32,6 +35,11 @@ public class PostService {
                 saved.getUserId(),
                 saved.getCreatedAt()
         );
+    }
+
+    public Page<PostSummaryResponse> getPosts(Pageable pageable) {
+        return postRepository.findAll(pageable)
+                .map(PostSummaryResponse::from);
     }
 
     private void validateRequest(PostCreateRequest request) {
