@@ -31,7 +31,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getPath().value();
-        if (path.startsWith("/auth")) {
+        if (path.startsWith("/auth") && !path.equals("/auth/me")) {
             return chain.filter(exchange);
         }
 
@@ -48,7 +48,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 .parseClaimsJws(token)
                 .getBody();
 
-            String userId = claims.getSubject();
+            String userId = String.valueOf(claims.get("userId"));
 
             log.info("JWT 유효성 통과 - userId: {}", userId);
 

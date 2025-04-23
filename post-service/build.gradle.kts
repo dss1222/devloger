@@ -16,6 +16,24 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.cloud:spring-cloud-starter-netflix-eureka-client")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+
+        // OpenAPI
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0")
+
+    // yml 자동 바인딩
+    implementation("org.springframework.boot:spring-boot-configuration-processor")
+
+    compileOnly("org.projectlombok:lombok")
+    annotationProcessor("org.projectlombok:lombok")
+
+    //DB 설정
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.springframework.boot:spring-boot-starter-security") // BCrypt
+    runtimeOnly("com.mysql:mysql-connector-j")
+
+    //테스트
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
 tasks.withType<org.springframework.boot.gradle.tasks.bundling.BootJar> {
