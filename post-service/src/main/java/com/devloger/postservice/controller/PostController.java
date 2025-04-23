@@ -2,10 +2,16 @@ package com.devloger.postservice.controller;
 
 import com.devloger.postservice.dto.PostCreateRequest;
 import com.devloger.postservice.dto.PostCreateResponse;
+import com.devloger.postservice.dto.PostListResponse;
+import com.devloger.postservice.dto.PostSummaryResponse;
 import com.devloger.postservice.service.PostService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,4 +35,14 @@ public class PostController {
         return ResponseEntity.ok(response);
     }
 
+
+    @GetMapping
+    @Operation(summary = "게시글 목록 조회", description = "전체 게시글을 페이징하여 조회합니다.")
+    public ResponseEntity<PostListResponse> getPosts(
+        @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
+        Pageable pageable
+    ) {
+        Page<PostSummaryResponse> page = postService.getPosts(pageable);
+        return ResponseEntity.ok(PostListResponse.from(page));
+    }
 }
