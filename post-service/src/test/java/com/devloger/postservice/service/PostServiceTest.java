@@ -4,7 +4,10 @@ import com.devloger.postservice.domain.Post;
 import com.devloger.postservice.dto.PostCreateRequest;
 import com.devloger.postservice.dto.PostCreateResponse;
 import com.devloger.postservice.dto.PostSummaryResponse;
+import com.devloger.postservice.dto.PostDetailResponse;
 import com.devloger.postservice.repository.PostRepository;
+import com.devloger.postservice.exception.CustomException;
+import com.devloger.postservice.exception.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -176,6 +179,46 @@ class PostServiceTest {
             assertThat(result.isLast()).isTrue();
 
             verify(postRepository).findAll(pageable);
+        }
+    }
+
+    @Nested
+    @DisplayName("게시글 상세 조회 서비스 테스트")
+    class GetPostDetailTest {
+
+        @Test
+        @DisplayName("게시글 상세 조회 성공")
+        void 게시글_상세_조회_성공() {
+            // given
+            Post post = createPost(TEST_POST_ID, TEST_TITLE, TEST_CONTENT, TEST_USER_ID, TEST_CREATED_AT);
+            when(postRepository.findById(TEST_POST_ID)).thenReturn(java.util.Optional.of(post));
+
+            // when
+            PostDetailResponse result = postService.getPostById(TEST_POST_ID);
+
+            // then
+            assertThat(result.id()).isEqualTo(TEST_POST_ID);
+            assertThat(result.title()).isEqualTo(TEST_TITLE);
+            assertThat(result.content()).isEqualTo(TEST_CONTENT);
+            assertThat(result.userId()).isEqualTo(TEST_USER_ID);
+            assertThat(result.createdAt()).isEqualTo(TEST_CREATED_AT);
+
+            verify(postRepository).findById(TEST_POST_ID);
+        }
+
+        @Test
+        @DisplayName("게시글 상세 조회 실패 - 존재하지 않는 ID")
+        void 게시글_상세_조회_실패_존재하지_않는_ID() {
+            // given
+            Long invalidId = 999L;
+            when(postRepository.findById(invalidId)).thenReturn(java.util.Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> postService.getPostById(invalidId))
+                .isInstanceOf(CustomException.class)
+                .hasMessage(ErrorCode.POST_NOT_FOUND.getMessage());
+
+            verify(postRepository).findById(invalidId);
         }
     }
 

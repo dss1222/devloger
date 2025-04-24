@@ -4,7 +4,11 @@ import com.devloger.postservice.domain.Post;
 import com.devloger.postservice.dto.PostCreateRequest;
 import com.devloger.postservice.dto.PostCreateResponse;
 import com.devloger.postservice.dto.PostSummaryResponse;
+import com.devloger.postservice.dto.PostDetailResponse;
 import com.devloger.postservice.repository.PostRepository;
+import com.devloger.postservice.exception.CustomException;
+import com.devloger.postservice.exception.ErrorCode;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -41,6 +45,13 @@ public class PostService {
         return postRepository.findAll(pageable)
                 .map(PostSummaryResponse::from);
     }
+
+    public PostDetailResponse getPostById(Long id) {
+        Post post = postRepository.findById(id)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+        return PostDetailResponse.from(post);
+    }
+    
 
     private void validateRequest(PostCreateRequest request) {
         if (!StringUtils.hasText(request.title())) {

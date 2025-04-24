@@ -2,6 +2,7 @@ package com.devloger.postservice.controller;
 
 import com.devloger.postservice.dto.PostCreateRequest;
 import com.devloger.postservice.dto.PostCreateResponse;
+import com.devloger.postservice.dto.PostDetailResponse;
 import com.devloger.postservice.dto.PostListResponse;
 import com.devloger.postservice.dto.PostSummaryResponse;
 import com.devloger.postservice.service.PostService;
@@ -44,5 +45,11 @@ public class PostController {
     ) {
         Page<PostSummaryResponse> page = postService.getPosts(pageable);
         return ResponseEntity.ok(PostListResponse.from(page));
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "게시글 상세 조회", description = "게시글 ID를 이용해 상세 내용을 조회합니다.")
+    public ResponseEntity<PostDetailResponse> getPostById(@PathVariable Long id) {
+        return ResponseEntity.ok(postService.getPostById(id));
     }
 }
