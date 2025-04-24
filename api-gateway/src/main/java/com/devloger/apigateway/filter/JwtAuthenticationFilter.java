@@ -20,6 +20,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @Slf4j
 @Component
@@ -28,13 +29,32 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private final JwtConfig jwtConfig;
 
+    // ✅ 인증 없이 허용할 경로들 (모든 HTTP 메서드 허용)
+    private static final List<String> ANY_WHITELIST = List.of(
+        "/auth/login",
+        "/auth/signup"
+    );
+
+    // ✅ GET 메서드만 허용할 경로들 (ex. /posts 목록)
+    private static final List<String> GET_WHITELIST = List.of(
+        "/posts"
+    );
+
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getPath().value();
-        if (path.startsWith("/auth") && !path.equals("/auth/me")) {
+        String method = exchange.getRequest().getMethod().name();
+
+        boolean isAnyWhitelisted = ANY_WHITELIST.contains(path);
+        boolean isGetWhitelisted = GET_WHITELIST.contains(path) && method.equals("GET");
+
+        // ✅ 인증 없이 허용할 경로는 필터 통과
+        if ((path.startsWith("/auth") && !path.equals("/auth/me")) || isAnyWhitelisted || isGetWhitelisted) {
+            log.info("✅ 필터 패스 - 인증 필요 없음 (whitelisted)");
             return chain.filter(exchange);
         }
 
+        // ✅ JWT Authorization 헤더 확인
         String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return unauthorizedResponse(exchange, JwtErrorType.GENERAL);
@@ -75,25 +95,24 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private Mono<Void> unauthorizedResponse(ServerWebExchange exchange, JwtErrorType errorType) {
         log.warn("JWT 검증 실패: {}", errorType.getMessage());
-    
-        exchange.getResponse().setStatusCode(errorType.getStatus()); // ✅ 상태코드 동적으로 설정
+
+        exchange.getResponse().setStatusCode(errorType.getStatus());
         exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
-    
+
         ErrorResponse response = new ErrorResponse(errorType.getCode(), errorType.getMessage());
-    
+
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             String json = objectMapper.writeValueAsString(response);
-    
+
             DataBufferFactory bufferFactory = exchange.getResponse().bufferFactory();
             DataBuffer buffer = bufferFactory.wrap(json.getBytes(StandardCharsets.UTF_8));
-    
+
             return exchange.getResponse().writeWith(Mono.just(buffer));
         } catch (Exception e) {
-            return exchange.getResponse().setComplete(); // fallback: 응답 비우고 종료
+            return exchange.getResponse().setComplete();
         }
     }
-    
 
     @Override
     public int getOrder() {

@@ -2,9 +2,11 @@ package com.devloger.postservice.controller;
 
 import com.devloger.postservice.dto.PostCreateRequest;
 import com.devloger.postservice.dto.PostCreateResponse;
-import com.devloger.postservice.dto.PostListResponse;
+import com.devloger.postservice.dto.PostDetailResponse;
 import com.devloger.postservice.dto.PostSummaryResponse;
 import com.devloger.postservice.service.PostService;
+import com.devloger.postservice.exception.CustomException;
+import com.devloger.postservice.exception.ErrorCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -72,13 +74,6 @@ class PostControllerTest {
                     .andExpect(jsonPath("$.title").value(TEST_TITLE))
                     .andExpect(jsonPath("$.content").value(TEST_CONTENT))
                     .andExpect(jsonPath("$.userId").value(TEST_USER_ID));
-        }
-
-        private ResultActions performCreateRequest(PostCreateRequest request) throws Exception {
-            return mockMvc.perform(post(CREATE_URL)
-                    .header("X-User-Id", TEST_USER_ID)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)));
         }
 
         @Test
@@ -184,6 +179,49 @@ class PostControllerTest {
         }
     }
 
+    @Nested
+    @DisplayName("게시글 상세 조회 API 테스트")
+    class GetPostDetailTest {
+
+        @Test
+        @DisplayName("게시글 상세 조회 성공")
+        void 게시글_상세_조회_성공() throws Exception {
+            // given
+            Long postId = 1L;
+            PostDetailResponse response = new PostDetailResponse(
+                postId,
+                TEST_TITLE,
+                TEST_CONTENT,
+                TEST_USER_ID,
+                TEST_CREATED_AT
+            );
+            when(postService.getPostById(postId)).thenReturn(response);
+
+            // when & then
+            mockMvc.perform(get(GET_POSTS_URL + "/" + postId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(postId))
+                .andExpect(jsonPath("$.title").value(TEST_TITLE))
+                .andExpect(jsonPath("$.content").value(TEST_CONTENT))
+                .andExpect(jsonPath("$.userId").value(TEST_USER_ID))
+                .andExpect(jsonPath("$.createdAt").exists());
+        }
+
+        @Test
+        @DisplayName("게시글 상세 조회 실패 - 존재하지 않는 ID")
+        void 게시글_상세_조회_실패_존재하지_않는_ID() throws Exception {
+            // given
+            Long invalidId = 999L;
+            when(postService.getPostById(invalidId))
+                .thenThrow(new CustomException(ErrorCode.POST_NOT_FOUND));
+
+            // when & then
+            mockMvc.perform(get(GET_POSTS_URL + "/" + invalidId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(ErrorCode.POST_NOT_FOUND.name()))
+                .andExpect(jsonPath("$.message").value(ErrorCode.POST_NOT_FOUND.getMessage()));
+        }
+    }
     private ResultActions performCreateRequest(PostCreateRequest request) throws Exception {
         return mockMvc.perform(post(CREATE_URL)
                 .header("X-User-Id", TEST_USER_ID)
