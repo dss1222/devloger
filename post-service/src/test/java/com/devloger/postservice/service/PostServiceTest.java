@@ -5,9 +5,11 @@ import com.devloger.postservice.dto.PostCreateRequest;
 import com.devloger.postservice.dto.PostCreateResponse;
 import com.devloger.postservice.dto.PostSummaryResponse;
 import com.devloger.postservice.dto.PostDetailResponse;
+import com.devloger.postservice.dto.PostUpdateRequest;
 import com.devloger.postservice.repository.PostRepository;
 import com.devloger.postservice.exception.CustomException;
 import com.devloger.postservice.exception.ErrorCode;
+import com.devloger.postservice.util.TestDataUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -20,7 +22,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,13 +38,6 @@ class PostServiceTest {
 
     private PostService postService;
 
-    // 테스트 데이터
-    private static final String TEST_TITLE = "테스트 제목";
-    private static final String TEST_CONTENT = "테스트 내용";
-    private static final Long TEST_USER_ID = 1L;
-    private static final Long TEST_POST_ID = 1L;
-    private static final LocalDateTime TEST_CREATED_AT = LocalDateTime.now();
-
     @BeforeEach
     void setUp() {
         postService = new PostService(postRepository);
@@ -57,20 +51,22 @@ class PostServiceTest {
         @DisplayName("게시글 생성 성공")
         void 게시글_생성_성공() {
             // given
-            PostCreateRequest request = createPostRequest(TEST_TITLE, TEST_CONTENT);
-            Post savedPost = createPost(TEST_POST_ID, TEST_TITLE, TEST_CONTENT, TEST_USER_ID, TEST_CREATED_AT);
+            PostCreateRequest request = TestDataUtil.createPostRequest(TestDataUtil.TEST_TITLE, TestDataUtil.TEST_CONTENT);
+            Post savedPost = TestDataUtil.createPost(
+                TestDataUtil.TEST_POST_ID, TestDataUtil.TEST_TITLE, TestDataUtil.TEST_CONTENT, TestDataUtil.TEST_USER_ID, TestDataUtil.TEST_CREATED_AT
+            );
             
             when(postRepository.save(any(Post.class))).thenReturn(savedPost);
 
             // when
-            PostCreateResponse response = postService.create(request, TEST_USER_ID);
+            PostCreateResponse response = postService.create(request, TestDataUtil.TEST_USER_ID);
 
             // then
-            assertThat(response.id()).isEqualTo(TEST_POST_ID);
-            assertThat(response.title()).isEqualTo(TEST_TITLE);
-            assertThat(response.content()).isEqualTo(TEST_CONTENT);
-            assertThat(response.userId()).isEqualTo(TEST_USER_ID);
-            assertThat(response.createdAt()).isEqualTo(TEST_CREATED_AT);
+            assertThat(response.id()).isEqualTo(TestDataUtil.TEST_POST_ID);
+            assertThat(response.title()).isEqualTo(TestDataUtil.TEST_TITLE);
+            assertThat(response.content()).isEqualTo(TestDataUtil.TEST_CONTENT);
+            assertThat(response.userId()).isEqualTo(TestDataUtil.TEST_USER_ID);
+            assertThat(response.createdAt()).isEqualTo(TestDataUtil.TEST_CREATED_AT);
 
             verify(postRepository).save(any(Post.class));
         }
@@ -79,10 +75,10 @@ class PostServiceTest {
         @DisplayName("게시글 생성 실패 - 제목이 null인 경우")
         void 게시글_생성_실패_제목_null() {
             // given
-            PostCreateRequest request = createPostRequest(null, TEST_CONTENT);
+            PostCreateRequest request = TestDataUtil.createPostRequest(null, TestDataUtil.TEST_CONTENT);
 
             // when & then
-            assertThatThrownBy(() -> postService.create(request, TEST_USER_ID))
+            assertThatThrownBy(() -> postService.create(request, TestDataUtil.TEST_USER_ID))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("제목은 필수입니다.");
         }
@@ -91,10 +87,10 @@ class PostServiceTest {
         @DisplayName("게시글 생성 실패 - 내용이 null인 경우")
         void 게시글_생성_실패_내용_null() {
             // given
-            PostCreateRequest request = createPostRequest(TEST_TITLE, null);
+            PostCreateRequest request = TestDataUtil.createPostRequest(TestDataUtil.TEST_TITLE, null);
 
             // when & then
-            assertThatThrownBy(() -> postService.create(request, TEST_USER_ID))
+            assertThatThrownBy(() -> postService.create(request, TestDataUtil.TEST_USER_ID))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("내용은 필수입니다.");
         }
@@ -103,10 +99,10 @@ class PostServiceTest {
         @DisplayName("게시글 생성 실패 - 제목이 빈 문자열인 경우")
         void 게시글_생성_실패_제목_빈문자열() {
             // given
-            PostCreateRequest request = createPostRequest("", TEST_CONTENT);
+            PostCreateRequest request = TestDataUtil.createPostRequest("", TestDataUtil.TEST_CONTENT);
 
             // when & then
-            assertThatThrownBy(() -> postService.create(request, TEST_USER_ID))
+            assertThatThrownBy(() -> postService.create(request, TestDataUtil.TEST_USER_ID))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("제목은 필수입니다.");
         }
@@ -115,10 +111,10 @@ class PostServiceTest {
         @DisplayName("게시글 생성 실패 - 내용이 빈 문자열인 경우")
         void 게시글_생성_실패_내용_빈문자열() {
             // given
-            PostCreateRequest request = createPostRequest(TEST_TITLE, "");
+            PostCreateRequest request = TestDataUtil.createPostRequest(TestDataUtil.TEST_TITLE, "");
 
             // when & then
-            assertThatThrownBy(() -> postService.create(request, TEST_USER_ID))
+            assertThatThrownBy(() -> postService.create(request, TestDataUtil.TEST_USER_ID))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("내용은 필수입니다.");
         }
@@ -134,8 +130,8 @@ class PostServiceTest {
             // given
             Pageable pageable = PageRequest.of(0, 10);
             List<Post> posts = List.of(
-                createPost(1L, "제목1", "내용1", 1L, TEST_CREATED_AT),
-                createPost(2L, "제목2", "내용2", 2L, TEST_CREATED_AT)
+                TestDataUtil.createPost(1L, "제목1", "내용1", 1L, TestDataUtil.TEST_CREATED_AT),
+                TestDataUtil.createPost(2L, "제목2", "내용2", 2L, TestDataUtil.TEST_CREATED_AT)
             );
             Page<Post> postPage = new PageImpl<>(posts, pageable, 2);
             
@@ -155,7 +151,7 @@ class PostServiceTest {
             assertThat(firstPost.title()).isEqualTo("제목1");
             assertThat(firstPost.content()).isEqualTo("내용1");
             assertThat(firstPost.userId()).isEqualTo(1L);
-            assertThat(firstPost.createdAt()).isEqualTo(TEST_CREATED_AT);
+            assertThat(firstPost.createdAt()).isEqualTo(TestDataUtil.TEST_CREATED_AT);
 
             verify(postRepository).findAll(pageable);
         }
@@ -190,20 +186,22 @@ class PostServiceTest {
         @DisplayName("게시글 상세 조회 성공")
         void 게시글_상세_조회_성공() {
             // given
-            Post post = createPost(TEST_POST_ID, TEST_TITLE, TEST_CONTENT, TEST_USER_ID, TEST_CREATED_AT);
-            when(postRepository.findById(TEST_POST_ID)).thenReturn(java.util.Optional.of(post));
+            Post post = TestDataUtil.createPost(
+                TestDataUtil.TEST_POST_ID, TestDataUtil.TEST_TITLE, TestDataUtil.TEST_CONTENT, TestDataUtil.TEST_USER_ID, TestDataUtil.TEST_CREATED_AT
+            );
+            when(postRepository.findById(TestDataUtil.TEST_POST_ID)).thenReturn(java.util.Optional.of(post));
 
             // when
-            PostDetailResponse result = postService.getPostById(TEST_POST_ID);
+            PostDetailResponse result = postService.getPostById(TestDataUtil.TEST_POST_ID);
 
             // then
-            assertThat(result.id()).isEqualTo(TEST_POST_ID);
-            assertThat(result.title()).isEqualTo(TEST_TITLE);
-            assertThat(result.content()).isEqualTo(TEST_CONTENT);
-            assertThat(result.userId()).isEqualTo(TEST_USER_ID);
-            assertThat(result.createdAt()).isEqualTo(TEST_CREATED_AT);
+            assertThat(result.id()).isEqualTo(TestDataUtil.TEST_POST_ID);
+            assertThat(result.title()).isEqualTo(TestDataUtil.TEST_TITLE);
+            assertThat(result.content()).isEqualTo(TestDataUtil.TEST_CONTENT);
+            assertThat(result.userId()).isEqualTo(TestDataUtil.TEST_USER_ID);
+            assertThat(result.createdAt()).isEqualTo(TestDataUtil.TEST_CREATED_AT);
 
-            verify(postRepository).findById(TEST_POST_ID);
+            verify(postRepository).findById(TestDataUtil.TEST_POST_ID);
         }
 
         @Test
@@ -222,18 +220,61 @@ class PostServiceTest {
         }
     }
 
-    // 테스트 데이터 생성 메서드
-    private PostCreateRequest createPostRequest(String title, String content) {
-        return new PostCreateRequest(title, content);
-    }
+    @Nested
+    @DisplayName("게시글 수정 서비스 테스트")
+    class UpdatePostTest {
 
-    private Post createPost(Long id, String title, String content, Long userId, LocalDateTime createdAt) {
-        return Post.builder()
-                .id(id)
-                .title(title)
-                .content(content)
-                .userId(userId)
-                .createdAt(createdAt)
-                .build();
+        @Test
+        @DisplayName("게시글 수정 성공")
+        void 게시글_수정_성공() {
+            // given
+            Post post = TestDataUtil.createPost(
+                TestDataUtil.TEST_POST_ID, TestDataUtil.TEST_TITLE, TestDataUtil.TEST_CONTENT, TestDataUtil.TEST_USER_ID, TestDataUtil.TEST_CREATED_AT
+            );
+            PostUpdateRequest request = new PostUpdateRequest("수정된 제목", "수정된 내용");
+
+            when(postRepository.findById(TestDataUtil.TEST_POST_ID)).thenReturn(java.util.Optional.of(post));
+            when(postRepository.save(any(Post.class))).thenReturn(post);
+
+            // when
+            PostDetailResponse result = postService.update(TestDataUtil.TEST_POST_ID, TestDataUtil.TEST_USER_ID, request);
+
+            // then
+            assertThat(result.title()).isEqualTo("수정된 제목");
+            assertThat(result.content()).isEqualTo("수정된 내용");
+            verify(postRepository).save(any(Post.class));
+        }
+
+        @Test
+        @DisplayName("게시글 수정 실패 - 작성자가 아님")
+        void 게시글_수정_실패_권한없음() {
+            // given
+            Post post = TestDataUtil.createPost(
+                TestDataUtil.TEST_POST_ID, TestDataUtil.TEST_TITLE, TestDataUtil.TEST_CONTENT, TestDataUtil.TEST_USER_ID, TestDataUtil.TEST_CREATED_AT
+            );
+            Long otherUserId = 2L;
+            PostUpdateRequest request = new PostUpdateRequest("수정된 제목", "수정된 내용");
+
+            when(postRepository.findById(TestDataUtil.TEST_POST_ID)).thenReturn(java.util.Optional.of(post));
+
+            // when & then
+            assertThatThrownBy(() -> postService.update(TestDataUtil.TEST_POST_ID, otherUserId, request))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.UNAUTHORIZED_ACCESS.getMessage());
+        }
+
+        @Test
+        @DisplayName("게시글 수정 실패 - 존재하지 않는 게시글")
+        void 게시글_수정_실패_존재하지_않음() {
+            // given
+            PostUpdateRequest request = new PostUpdateRequest("수정된 제목", "수정된 내용");
+
+            when(postRepository.findById(TestDataUtil.TEST_POST_ID)).thenReturn(java.util.Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> postService.update(TestDataUtil.TEST_POST_ID, TestDataUtil.TEST_USER_ID, request))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.POST_NOT_FOUND.getMessage());
+        }
     }
 } 

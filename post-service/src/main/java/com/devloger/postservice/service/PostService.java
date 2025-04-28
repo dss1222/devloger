@@ -5,6 +5,7 @@ import com.devloger.postservice.dto.PostCreateRequest;
 import com.devloger.postservice.dto.PostCreateResponse;
 import com.devloger.postservice.dto.PostSummaryResponse;
 import com.devloger.postservice.dto.PostDetailResponse;
+import com.devloger.postservice.dto.PostUpdateRequest;
 import com.devloger.postservice.repository.PostRepository;
 import com.devloger.postservice.exception.CustomException;
 import com.devloger.postservice.exception.ErrorCode;
@@ -51,6 +52,22 @@ public class PostService {
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
         return PostDetailResponse.from(post);
     }
+
+    public PostDetailResponse update(Long id, Long userId, PostUpdateRequest request) {
+        Post post = postRepository.findById(id)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+    
+        if (!post.getUserId().equals(userId)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+    
+        post.update(request.title(), request.content());
+    
+        Post saved = postRepository.save(post);
+    
+        return PostDetailResponse.from(saved);
+    }
+    
     
 
     private void validateRequest(PostCreateRequest request) {
