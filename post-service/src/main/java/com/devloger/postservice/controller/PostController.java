@@ -5,6 +5,7 @@ import com.devloger.postservice.dto.PostCreateResponse;
 import com.devloger.postservice.dto.PostDetailResponse;
 import com.devloger.postservice.dto.PostListResponse;
 import com.devloger.postservice.dto.PostSummaryResponse;
+import com.devloger.postservice.dto.PostUpdateRequest;
 import com.devloger.postservice.service.PostService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -52,4 +53,16 @@ public class PostController {
     public ResponseEntity<PostDetailResponse> getPostById(@PathVariable Long id) {
         return ResponseEntity.ok(postService.getPostById(id));
     }
+
+    @PatchMapping("/{id}")
+    @Operation(summary = "게시글 수정", description = "게시글 ID와 수정할 내용을 받아 게시글을 수정합니다. (작성자 본인만 수정 가능)")
+    public ResponseEntity<PostDetailResponse> updatePost(
+        @RequestHeader("X-User-Id") Long userId,
+        @PathVariable Long id,
+        @Valid @RequestBody PostUpdateRequest request
+    ) {
+        PostDetailResponse response = postService.update(id, userId, request);
+        return ResponseEntity.ok(response);
+    }
+
 }

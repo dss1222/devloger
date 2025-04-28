@@ -4,9 +4,11 @@ import com.devloger.postservice.dto.PostCreateRequest;
 import com.devloger.postservice.dto.PostCreateResponse;
 import com.devloger.postservice.dto.PostDetailResponse;
 import com.devloger.postservice.dto.PostSummaryResponse;
+import com.devloger.postservice.dto.PostUpdateRequest;
 import com.devloger.postservice.service.PostService;
 import com.devloger.postservice.exception.CustomException;
 import com.devloger.postservice.exception.ErrorCode;
+import com.devloger.postservice.util.TestDataUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -23,13 +25,13 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -49,21 +51,18 @@ class PostControllerTest {
     private static final String CREATE_URL = "/posts";
     private static final String GET_POSTS_URL = "/posts";
 
-    private static final Long TEST_USER_ID = 1L;
-    private static final String TEST_TITLE = "테스트 제목";
-    private static final String TEST_CONTENT = "테스트 본문입니다.";
-    private static final LocalDateTime TEST_CREATED_AT = LocalDateTime.now();
-
     @Nested
-    @DisplayName("게시글 작성 API 테스트")
+    @DisplayName("게시글 생성 API 테스트")
     class CreateTest {
 
         @Test
-        @DisplayName("게시글 작성 성공")
-        void 게시글_작성_성공() throws Exception {
+        @DisplayName("게시글 생성 성공")
+        void 게시글_생성_성공() throws Exception {
             // given
-            PostCreateRequest request = createPostRequest(TEST_TITLE, TEST_CONTENT);
-            PostCreateResponse response = new PostCreateResponse(1L, TEST_TITLE, TEST_CONTENT, TEST_USER_ID, LocalDateTime.now());
+            PostCreateRequest request = TestDataUtil.createPostRequest(TestDataUtil.TEST_TITLE, TestDataUtil.TEST_CONTENT);
+            PostCreateResponse response = TestDataUtil.createPostResponse(
+                1L, TestDataUtil.TEST_TITLE, TestDataUtil.TEST_CONTENT, TestDataUtil.TEST_USER_ID, TestDataUtil.TEST_CREATED_AT
+            );
 
             when(postService.create(any(), any())).thenReturn(response);
 
@@ -71,16 +70,16 @@ class PostControllerTest {
             performCreateRequest(request)
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(1L))
-                    .andExpect(jsonPath("$.title").value(TEST_TITLE))
-                    .andExpect(jsonPath("$.content").value(TEST_CONTENT))
-                    .andExpect(jsonPath("$.userId").value(TEST_USER_ID));
+                    .andExpect(jsonPath("$.title").value(TestDataUtil.TEST_TITLE))
+                    .andExpect(jsonPath("$.content").value(TestDataUtil.TEST_CONTENT))
+                    .andExpect(jsonPath("$.userId").value(TestDataUtil.TEST_USER_ID));
         }
 
         @Test
-        @DisplayName("게시글 작성 실패 - 제목 누락")
-        void 게시글_작성_실패_제목_누락() throws Exception {
+        @DisplayName("게시글 생성 실패 - 제목 누락")
+        void 게시글_생성_실패_제목_누락() throws Exception {
             // given
-            PostCreateRequest request = new PostCreateRequest(null, TEST_CONTENT);
+            PostCreateRequest request = new PostCreateRequest(null, TestDataUtil.TEST_CONTENT);
     
             // when & then
             performCreateRequest(request)
@@ -90,10 +89,10 @@ class PostControllerTest {
         }
 
         @Test
-        @DisplayName("게시글 작성 실패 - 내용 누락")
-        void 게시글_작성_실패_내용_누락() throws Exception {
+        @DisplayName("게시글 생성 실패 - 내용 누락")
+        void 게시글_생성_실패_내용_누락() throws Exception {
             // given
-            PostCreateRequest request = new PostCreateRequest(TEST_TITLE, null);
+            PostCreateRequest request = new PostCreateRequest(TestDataUtil.TEST_TITLE, null);
 
             // when & then
             performCreateRequest(request)
@@ -103,10 +102,10 @@ class PostControllerTest {
         }
 
         @Test
-        @DisplayName("게시글 작성 실패 - X-User-Id 헤더 누락")
-        void 게시글_작성_실패_헤더_누락() throws Exception {
+        @DisplayName("게시글 생성 실패 - X-User-Id 헤더 누락")
+        void 게시글_생성_실패_헤더_누락() throws Exception {
             // given
-            PostCreateRequest request = createPostRequest(TEST_TITLE, TEST_CONTENT);
+            PostCreateRequest request = TestDataUtil.createPostRequest(TestDataUtil.TEST_TITLE, TestDataUtil.TEST_CONTENT);
 
             // when & then
             mockMvc.perform(post(CREATE_URL)
@@ -114,8 +113,6 @@ class PostControllerTest {
                     .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
         }
-
-
     }
 
     @Nested
@@ -128,8 +125,8 @@ class PostControllerTest {
             // given
             Pageable pageable = PageRequest.of(0, 10);
             List<PostSummaryResponse> posts = List.of(
-                new PostSummaryResponse(1L, "제목1", "내용1", 1L, TEST_CREATED_AT),
-                new PostSummaryResponse(2L, "제목2", "내용2", 2L, TEST_CREATED_AT)
+                TestDataUtil.createPostSummaryResponse(1L, "제목1", "내용1", 1L, TestDataUtil.TEST_CREATED_AT),
+                TestDataUtil.createPostSummaryResponse(2L, "제목2", "내용2", 2L, TestDataUtil.TEST_CREATED_AT)
             );
             Page<PostSummaryResponse> postPage = new PageImpl<>(posts, pageable, 2);
             
@@ -188,12 +185,8 @@ class PostControllerTest {
         void 게시글_상세_조회_성공() throws Exception {
             // given
             Long postId = 1L;
-            PostDetailResponse response = new PostDetailResponse(
-                postId,
-                TEST_TITLE,
-                TEST_CONTENT,
-                TEST_USER_ID,
-                TEST_CREATED_AT
+            PostDetailResponse response = TestDataUtil.createPostDetailResponse(
+                postId, TestDataUtil.TEST_TITLE, TestDataUtil.TEST_CONTENT, TestDataUtil.TEST_USER_ID, TestDataUtil.TEST_CREATED_AT
             );
             when(postService.getPostById(postId)).thenReturn(response);
 
@@ -201,9 +194,9 @@ class PostControllerTest {
             mockMvc.perform(get(GET_POSTS_URL + "/" + postId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(postId))
-                .andExpect(jsonPath("$.title").value(TEST_TITLE))
-                .andExpect(jsonPath("$.content").value(TEST_CONTENT))
-                .andExpect(jsonPath("$.userId").value(TEST_USER_ID))
+                .andExpect(jsonPath("$.title").value(TestDataUtil.TEST_TITLE))
+                .andExpect(jsonPath("$.content").value(TestDataUtil.TEST_CONTENT))
+                .andExpect(jsonPath("$.userId").value(TestDataUtil.TEST_USER_ID))
                 .andExpect(jsonPath("$.createdAt").exists());
         }
 
@@ -222,15 +215,61 @@ class PostControllerTest {
                 .andExpect(jsonPath("$.message").value(ErrorCode.POST_NOT_FOUND.getMessage()));
         }
     }
-    private ResultActions performCreateRequest(PostCreateRequest request) throws Exception {
-        return mockMvc.perform(post(CREATE_URL)
-                .header("X-User-Id", TEST_USER_ID)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)));
+
+    @Nested
+    @DisplayName("게시글 수정 API 테스트")
+    class UpdatePostTest {
+
+        @Test
+        @DisplayName("게시글 수정 성공")
+        void 게시글_수정_성공() throws Exception {
+            // given
+            Long postId = 1L;
+            PostUpdateRequest request = new PostUpdateRequest("수정된 제목", "수정된 내용");
+            PostDetailResponse response = TestDataUtil.createPostDetailResponse(
+                postId, "수정된 제목", "수정된 내용", TestDataUtil.TEST_USER_ID, TestDataUtil.TEST_CREATED_AT
+            );
+
+            when(postService.update(postId, TestDataUtil.TEST_USER_ID, request)).thenReturn(response);
+
+            // when & then
+            mockMvc.perform(patch(GET_POSTS_URL + "/" + postId)
+                    .header("X-User-Id", TestDataUtil.TEST_USER_ID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(postId))
+                .andExpect(jsonPath("$.title").value("수정된 제목"))
+                .andExpect(jsonPath("$.content").value("수정된 내용"))
+                .andExpect(jsonPath("$.userId").value(TestDataUtil.TEST_USER_ID));
+        }
+
+        @Test
+        @DisplayName("게시글 수정 실패 - 작성자가 아닌 경우")
+        void 게시글_수정_실패_권한없음() throws Exception {
+            // given
+            Long postId = 1L;
+            Long otherUserId = 2L;
+            PostUpdateRequest request = new PostUpdateRequest("수정된 제목", "수정된 내용");
+
+            when(postService.update(postId, otherUserId, request))
+                    .thenThrow(new CustomException(ErrorCode.UNAUTHORIZED_ACCESS));
+
+            // when & then
+            mockMvc.perform(patch(GET_POSTS_URL + "/" + postId)
+                    .header("X-User-Id", otherUserId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(ErrorCode.UNAUTHORIZED_ACCESS.name()))
+                .andExpect(jsonPath("$.message").value(ErrorCode.UNAUTHORIZED_ACCESS.getMessage()));
+        }
     }
 
-    // 테스트 요청 생성 메서드
-    private PostCreateRequest createPostRequest(String title, String content) {
-        return new PostCreateRequest(title, content);
+    private ResultActions performCreateRequest(PostCreateRequest request) throws Exception {
+        return mockMvc.perform(post(CREATE_URL)
+                .header("X-User-Id", TestDataUtil.TEST_USER_ID)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)));
     }
 }
