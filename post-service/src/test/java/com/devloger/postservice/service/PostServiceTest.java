@@ -277,4 +277,71 @@ class PostServiceTest {
                     .hasMessage(ErrorCode.POST_NOT_FOUND.getMessage());
         }
     }
+
+    @Nested
+    @DisplayName("게시글 삭제 서비스 테스트")
+    class DeletePostTest {
+
+        @Test
+        @DisplayName("게시글 삭제 성공")
+        void 게시글_삭제_성공() {
+            // given
+            Post post = TestDataUtil.createPost(
+                TestDataUtil.TEST_POST_ID,
+                TestDataUtil.TEST_TITLE,
+                TestDataUtil.TEST_CONTENT,
+                TestDataUtil.TEST_USER_ID,
+                TestDataUtil.TEST_CREATED_AT
+            );
+
+            when(postRepository.findById(TestDataUtil.TEST_POST_ID))
+                .thenReturn(java.util.Optional.of(post));
+
+            // when
+            postService.delete(TestDataUtil.TEST_POST_ID, TestDataUtil.TEST_USER_ID);
+
+            // then
+            assertThat(post.getDeletedAt()).isNotNull(); // ✅ 소프트 삭제 되었는지 확인
+            verify(postRepository).findById(TestDataUtil.TEST_POST_ID);
+        }
+
+        @Test
+        @DisplayName("게시글 삭제 실패 - 작성자가 아님")
+        void 게시글_삭제_실패_권한없음() {
+            // given
+            Post post = TestDataUtil.createPost(
+                TestDataUtil.TEST_POST_ID,
+                TestDataUtil.TEST_TITLE,
+                TestDataUtil.TEST_CONTENT,
+                TestDataUtil.TEST_USER_ID,
+                TestDataUtil.TEST_CREATED_AT
+            );
+            Long otherUserId = 2L;
+
+            when(postRepository.findById(TestDataUtil.TEST_POST_ID))
+                .thenReturn(java.util.Optional.of(post));
+
+            // when & then
+            assertThatThrownBy(() -> postService.delete(TestDataUtil.TEST_POST_ID, otherUserId))
+                .isInstanceOf(CustomException.class)
+                .hasMessage(ErrorCode.UNAUTHORIZED_ACCESS.getMessage());
+
+            verify(postRepository).findById(TestDataUtil.TEST_POST_ID);
+        }
+
+        @Test
+        @DisplayName("게시글 삭제 실패 - 존재하지 않는 게시글")
+        void 게시글_삭제_실패_존재하지_않음() {
+            // given
+            when(postRepository.findById(TestDataUtil.TEST_POST_ID))
+                .thenReturn(java.util.Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> postService.delete(TestDataUtil.TEST_POST_ID, TestDataUtil.TEST_USER_ID))
+                .isInstanceOf(CustomException.class)
+                .hasMessage(ErrorCode.POST_NOT_FOUND.getMessage());
+
+            verify(postRepository).findById(TestDataUtil.TEST_POST_ID);
+        }
+    }
 } 

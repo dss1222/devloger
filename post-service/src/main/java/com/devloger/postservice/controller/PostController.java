@@ -65,4 +65,14 @@ public class PostController {
         return ResponseEntity.ok(response);
     }
 
+    @DeleteMapping("/{id}")
+    @Operation(summary = "게시글 삭제", description = "게시글을 소프트 삭제합니다. 작성자만 삭제 가능")
+    public ResponseEntity<Void> deletePost(
+        @RequestHeader("X-User-Id") Long userId,
+        @PathVariable Long id
+    ) {
+        postService.delete(id, userId);
+        return ResponseEntity.noContent().build();
+    }
+
 }
