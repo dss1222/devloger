@@ -67,6 +67,19 @@ public class PostService {
     
         return PostDetailResponse.from(saved);
     }
+
+    public void delete(Long postId, Long userId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+    
+        if (!post.getUserId().equals(userId)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+    
+        post.softDelete();
+        postRepository.save(post); // ✅ 꼭 저장해줘야 DB에 반영돼
+    }
+    
     
     
 

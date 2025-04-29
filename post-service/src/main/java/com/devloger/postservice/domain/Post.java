@@ -2,7 +2,7 @@ package com.devloger.postservice.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
-
+import org.hibernate.annotations.SQLRestriction;
 import java.time.LocalDateTime;
 
 @Entity
@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
+@SQLRestriction("deleted_at IS NULL")
 public class Post {
 
     @Id
@@ -24,14 +25,28 @@ public class Post {
 
     private LocalDateTime createdAt;
 
+    private LocalDateTime updatedAt;
+
+    private LocalDateTime deletedAt;
+
     @PrePersist
     public void setCreatedAt() {
         this.createdAt = LocalDateTime.now();
     }
 
+    @PreUpdate
+    public void setUpdatedAt() {
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void softDelete() {
+        this.deletedAt = LocalDateTime.now();
+    }
+
+
     public void update(String title, String content) {
         this.title = title;
         this.content = content;
-    }
+    }    
     
 }

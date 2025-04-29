@@ -29,9 +29,12 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.doThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -265,6 +268,65 @@ class PostControllerTest {
                 .andExpect(jsonPath("$.message").value(ErrorCode.UNAUTHORIZED_ACCESS.getMessage()));
         }
     }
+
+    @Nested
+    @DisplayName("게시글 삭제 API 테스트")
+    class DeletePostTest {
+
+        @Test
+        @DisplayName("게시글 삭제 성공")
+        void 게시글_삭제_성공() throws Exception {
+            // given
+            Long postId = 1L;
+
+            // when & then
+            mockMvc.perform(delete(GET_POSTS_URL + "/" + postId)
+                    .header("X-User-Id", TestDataUtil.TEST_USER_ID))
+                .andExpect(status().isNoContent()); // ✅ 삭제는 일반적으로 204 No Content 응답
+
+            verify(postService).delete(postId, TestDataUtil.TEST_USER_ID);
+        }
+
+        @Test
+        @DisplayName("게시글 삭제 실패 - 존재하지 않는 게시글")
+        void 게시글_삭제_실패_존재하지_않는_게시글() throws Exception {
+            // given
+            Long invalidPostId = 999L;
+
+            doThrow(new CustomException(ErrorCode.POST_NOT_FOUND))
+            .when(postService).delete(invalidPostId, TestDataUtil.TEST_USER_ID);
+
+            // when & then
+            mockMvc.perform(delete(GET_POSTS_URL + "/" + invalidPostId)
+                    .header("X-User-Id", TestDataUtil.TEST_USER_ID))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(ErrorCode.POST_NOT_FOUND.name()))
+                .andExpect(jsonPath("$.message").value(ErrorCode.POST_NOT_FOUND.getMessage()));
+
+            verify(postService).delete(invalidPostId, TestDataUtil.TEST_USER_ID);
+        }
+
+        @Test
+        @DisplayName("게시글 삭제 실패 - 권한 없음")
+        void 게시글_삭제_실패_권한없음() throws Exception {
+            // given
+            Long postId = 1L;
+            Long otherUserId = 2L;
+
+            doThrow(new CustomException(ErrorCode.UNAUTHORIZED_ACCESS))
+            .when(postService).delete(postId, otherUserId);
+
+            // when & then
+            mockMvc.perform(delete(GET_POSTS_URL + "/" + postId)
+                    .header("X-User-Id", otherUserId))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(ErrorCode.UNAUTHORIZED_ACCESS.name()))
+                .andExpect(jsonPath("$.message").value(ErrorCode.UNAUTHORIZED_ACCESS.getMessage()));
+
+            verify(postService).delete(postId, otherUserId);
+        }
+    }
+
 
     private ResultActions performCreateRequest(PostCreateRequest request) throws Exception {
         return mockMvc.perform(post(CREATE_URL)
