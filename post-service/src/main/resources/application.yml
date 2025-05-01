@@ -6,7 +6,7 @@ spring:
     name: post-service
 
   datasource:
-    url: jdbc:mysql://mysql-post:3307/devloger_post?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    url: jdbc:mysql://mysql-post:3306/devloger_post?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
     password: 1234

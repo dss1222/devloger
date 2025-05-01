@@ -19,6 +19,10 @@ RUN ./gradlew :auth-service:bootJar --no-daemon
 FROM eclipse-temurin:17-jdk
 WORKDIR /app
 
+# 대기 스크립트 추가
+ADD https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh /wait-for-it.sh
+RUN chmod +x /wait-for-it.sh
+
 # 빌드 결과물 복사
 COPY --from=build /workspace/auth-service/build/libs/*.jar app.jar
 
@@ -26,4 +30,4 @@ COPY --from=build /workspace/auth-service/build/libs/*.jar app.jar
 EXPOSE 8081
 
 # 실행
-ENTRYPOINT ["java", "-jar", "app.jar"] 
+ENTRYPOINT ["/wait-for-it.sh", "mysql-auth:3306", "--", "java", "-jar", "app.jar"] 

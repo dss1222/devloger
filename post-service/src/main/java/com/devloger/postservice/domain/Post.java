@@ -2,15 +2,14 @@ package com.devloger.postservice.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.SQLRestriction;
 import java.time.LocalDateTime;
-
+import org.hibernate.annotations.Where;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-@SQLRestriction("deleted_at IS NULL")
+@Where(clause = "deleted_at IS NULL")
 public class Post {
 
     @Id
