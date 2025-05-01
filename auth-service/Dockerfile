@@ -19,6 +19,9 @@ RUN ./gradlew :auth-service:bootJar --no-daemon
 FROM eclipse-temurin:17-jdk
 WORKDIR /app
 
+# curl 설치
+RUN apt-get update && apt-get install -y curl
+
 # 대기 스크립트 추가
 ADD https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh /wait-for-it.sh
 RUN chmod +x /wait-for-it.sh

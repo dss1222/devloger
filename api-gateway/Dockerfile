@@ -19,6 +19,9 @@ RUN ./gradlew :api-gateway:bootJar --no-daemon
 FROM eclipse-temurin:17-jdk
 WORKDIR /app
 
+# curl 설치
+RUN apt-get update && apt-get install -y curl
+
 # 빌드 결과물 복사
 COPY --from=build /workspace/api-gateway/build/libs/*.jar app.jar
 
