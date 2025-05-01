@@ -6,7 +6,7 @@ spring:
     name: auth-service
 
   datasource:
-    url: jdbc:mysql://localhost:3306/devloger_auth?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    url: jdbc:mysql://mysql-auth:3306/devloger_auth?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
     password: 1234
@@ -24,7 +24,12 @@ eureka:
     register-with-eureka: true
     fetch-registry: true
     service-url:
-      defaultZone: http://localhost:8761/eureka
+      defaultZone: http://eureka-server:8761/eureka
+    # 💡 Eureka 서버 재시도 옵션 추가
+    healthcheck:
+      enabled: true
+    registry-fetch-interval-seconds: 5
+    initial-instance-info-replication-interval-seconds: 5
 
 jwt:
   secret: "devloger-super-secret-key-1234567890-jwt-secure-key!!" # 256비트 이상
