@@ -10,6 +10,7 @@ services:
       - "8761:8761"
     networks:
       - devloger-net
+    restart: unless-stopped
 
   mysql-auth:
     container_name: mysql-auth
@@ -21,6 +22,9 @@ services:
       MYSQL_DATABASE: devloger_auth
     networks:
       - devloger-net
+    volumes:
+      - mysql-auth-data:/var/lib/mysql
+    restart: unless-stopped
 
   mysql-post:
     container_name: mysql-post
@@ -32,6 +36,10 @@ services:
       MYSQL_DATABASE: devloger_post
     networks:
       - devloger-net
+    volumes:
+      - mysql-post-data:/var/lib/mysql
+    restart: unless-stopped
+
 
   auth-service:
     container_name: auth-service
@@ -50,6 +58,7 @@ services:
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: 1234
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka
+    restart: unless-stopped
 
   post-service:
     container_name: post-service
@@ -68,6 +77,7 @@ services:
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: 1234
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka
+    restart: unless-stopped
 
   comment-service:
     container_name: comment-service
@@ -82,6 +92,7 @@ services:
       - devloger-net
     environment:
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka
+    restart: unless-stopped
 
   api-gateway:
     container_name: api-gateway
@@ -96,7 +107,12 @@ services:
       - devloger-net
     environment:
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka
+    restart: unless-stopped
 
 networks:
   devloger-net:
     driver: bridge
+
+volumes:
+  mysql-auth-data:
+  mysql-post-data:
