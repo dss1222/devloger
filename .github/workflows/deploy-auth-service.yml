@@ -53,6 +53,11 @@ jobs:
           gcloud container clusters get-credentials ${{ secrets.CLUSTER_NAME }} \
             --region=${{ secrets.REGION }} --project=${{ secrets.PROJECT_ID }}
 
+      - name: Install kubectl
+        run: |
+          apt-get update && apt-get install -y kubectl
+
+
       - name: Deploy to GKE
         run: |
           IMAGE=asia-northeast3-docker.pkg.dev/${{ secrets.PROJECT_ID }}/docker-repo/auth-service:$GITHUB_SHA
