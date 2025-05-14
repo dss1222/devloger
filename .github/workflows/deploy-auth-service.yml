@@ -9,40 +9,26 @@ on:
 
 jobs:
   deploy:
-    name: Build and Deploy to GKE
     runs-on: ubuntu-latest
-    container:
-      image: google/cloud-sdk:slim
+    env:
+      USE_GKE_GCLOUD_AUTH_PLUGIN: "True"  # ✅ 인증 플러그인 명시 활성화
 
     steps:
-      - name: Install basic tools
-        run: |
-          apt-get update
-          apt-get install -y git unzip openjdk-17-jdk
-
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Set up Gradle wrapper permissions
-        run: chmod +x ./gradlew
-
-      - name: Build with Gradle
-        run: ./gradlew :auth-service:bootJar
-
-      - name: Authenticate to Google Cloud
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: /tmp/key.json
-        run: |
-          echo '${{ secrets.GCP_CREDENTIALS }}' > /tmp/key.json
-          gcloud auth activate-service-account --key-file=/tmp/key.json
-          gcloud config set project ${{ secrets.PROJECT_ID }}
-          gcloud config set compute/region ${{ secrets.REGION }}
-          gcloud config set compute/zone ${{ secrets.ZONE }}
+      - name: Install gcloud + kubectl
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          version: 'latest'
+          install_components: 'kubectl'
+          project_id: ${{ secrets.PROJECT_ID }}
+          credentials: ${{ secrets.GCP_CREDENTIALS }}
 
       - name: Authenticate Docker to Artifact Registry
         run: gcloud auth configure-docker asia-northeast3-docker.pkg.dev --quiet
 
-      - name: Docker Build & Push
+      - name: Build & Push Docker Image
         run: |
           IMAGE=asia-northeast3-docker.pkg.dev/${{ secrets.PROJECT_ID }}/docker-repo/auth-service:$GITHUB_SHA
           docker build -t $IMAGE -f auth-service/Dockerfile .
@@ -52,11 +38,6 @@ jobs:
         run: |
           gcloud container clusters get-credentials ${{ secrets.CLUSTER_NAME }} \
             --region=${{ secrets.REGION }} --project=${{ secrets.PROJECT_ID }}
-
-      - name: Install kubectl
-        run: |
-          apt-get update && apt-get install -y kubectl
-
 
       - name: Deploy to GKE
         run: |
