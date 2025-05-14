@@ -3,9 +3,9 @@ name: Deploy auth-service to GKE
 on:
   push:
     paths:
-      - 'auth-service/**'      # auth-service 디렉토리 변경만 감지
+      - 'auth-service/**'
     branches:
-      - main                   # main 브랜치에서만 트리거
+      - main
 
 jobs:
   build-deploy:
@@ -39,16 +39,11 @@ jobs:
         run: |
           gcloud auth configure-docker asia-northeast3-docker.pkg.dev --quiet
 
-
       - name: Docker Build & Push
         run: |
           IMAGE=asia-northeast3-docker.pkg.dev/${{ secrets.PROJECT_ID }}/docker-repo/auth-service:$GITHUB_SHA
           docker build -t $IMAGE -f auth-service/Dockerfile .
           docker push $IMAGE
-
-      - name: Install GKE auth plugin
-        run: |
-          sudo apt-get install -y google-cloud-sdk-gke-gcloud-auth-plugin
 
       - name: Connect to GKE
         run: |
@@ -56,6 +51,7 @@ jobs:
             --region=${{ secrets.REGION }} --project=${{ secrets.PROJECT_ID }}
 
       - name: Deploy to GKE
+        env:
+          IMAGE: asia-northeast3-docker.pkg.dev/${{ secrets.PROJECT_ID }}/docker-repo/auth-service:${{ github.sha }}
         run: |
-          IMAGE=asia-northeast3-docker.pkg.dev/${{ secrets.PROJECT_ID }}/docker-repo/auth-service:$GITHUB_SHA
           kubectl set image deployment/auth-service auth-service=$IMAGE
