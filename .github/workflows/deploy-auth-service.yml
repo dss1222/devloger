@@ -46,6 +46,8 @@ jobs:
           docker push $IMAGE
 
       - name: Connect to GKE
+        env:
+          USE_GKE_GCLOUD_AUTH_PLUGIN: "False"
         run: |
           gcloud container clusters get-credentials ${{ secrets.CLUSTER_NAME }} \
             --region=${{ secrets.REGION }} --project=${{ secrets.PROJECT_ID }}
@@ -53,5 +55,6 @@ jobs:
       - name: Deploy to GKE
         env:
           IMAGE: asia-northeast3-docker.pkg.dev/${{ secrets.PROJECT_ID }}/docker-repo/auth-service:${{ github.sha }}
+          USE_GKE_GCLOUD_AUTH_PLUGIN: "False"
         run: |
           kubectl set image deployment/auth-service auth-service=$IMAGE
