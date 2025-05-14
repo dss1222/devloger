@@ -8,36 +8,39 @@ on:
       - main
 
 jobs:
-  build-deploy:
+  deploy:
+    name: Build and Deploy to GKE
     runs-on: ubuntu-latest
+    container:
+      image: google/cloud-sdk:slim
 
     steps:
+      - name: Install basic tools
+        run: |
+          apt-get update
+          apt-get install -y git unzip openjdk-17-jdk
+
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Set up JDK
-        uses: actions/setup-java@v3
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Grant execute permission for gradlew
+      - name: Set up Gradle wrapper permissions
         run: chmod +x ./gradlew
 
       - name: Build with Gradle
         run: ./gradlew :auth-service:bootJar
 
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v1
-        with:
-          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
-
-      - name: Set up gcloud CLI
-        uses: google-github-actions/setup-gcloud@v1
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/key.json
+        run: |
+          echo '${{ secrets.GCP_CREDENTIALS }}' > /tmp/key.json
+          gcloud auth activate-service-account --key-file=/tmp/key.json
+          gcloud config set project ${{ secrets.PROJECT_ID }}
+          gcloud config set compute/region ${{ secrets.REGION }}
+          gcloud config set compute/zone ${{ secrets.ZONE }}
 
       - name: Authenticate Docker to Artifact Registry
-        run: |
-          gcloud auth configure-docker asia-northeast3-docker.pkg.dev --quiet
+        run: gcloud auth configure-docker asia-northeast3-docker.pkg.dev --quiet
 
       - name: Docker Build & Push
         run: |
@@ -46,15 +49,11 @@ jobs:
           docker push $IMAGE
 
       - name: Connect to GKE
-        env:
-          USE_GKE_GCLOUD_AUTH_PLUGIN: "False"
         run: |
           gcloud container clusters get-credentials ${{ secrets.CLUSTER_NAME }} \
             --region=${{ secrets.REGION }} --project=${{ secrets.PROJECT_ID }}
 
       - name: Deploy to GKE
-        env:
-          IMAGE: asia-northeast3-docker.pkg.dev/${{ secrets.PROJECT_ID }}/docker-repo/auth-service:${{ github.sha }}
-          USE_GKE_GCLOUD_AUTH_PLUGIN: "False"
         run: |
+          IMAGE=asia-northeast3-docker.pkg.dev/${{ secrets.PROJECT_ID }}/docker-repo/auth-service:$GITHUB_SHA
           kubectl set image deployment/auth-service auth-service=$IMAGE
