@@ -1,5 +1,5 @@
 plugins {
-    id("org.springframework.boot") version "3.2.3"
+    id("org.springframework.boot") version "3.1.9"
     id("io.spring.dependency-management") version "1.1.3"
     id("java")
 }
@@ -10,6 +10,12 @@ java.sourceCompatibility = JavaVersion.VERSION_17
 
 repositories {
     mavenCentral()
+}
+
+dependencyManagement {
+    imports {
+        mavenBom("org.springframework.cloud:spring-cloud-dependencies:2022.0.5")
+    }
 }
 
 dependencies {
@@ -31,16 +37,15 @@ dependencies {
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
 
-    //DB 설정
+    // DB 설정
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")
-    implementation("org.springframework.boot:spring-boot-starter-security") // BCrypt
+    implementation("org.springframework.boot:spring-boot-starter-security")
     runtimeOnly("com.mysql:mysql-connector-j")
 
-    //테스트
+    // 테스트
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
-
 
 tasks.withType<org.springframework.boot.gradle.tasks.bundling.BootJar> {
     mainClass.set("com.devloger.authservice.AuthserviceApplication")

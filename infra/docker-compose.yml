@@ -1,0 +1,161 @@
+version: '3.8'
+
+services:
+  eureka-server:
+    container_name: eureka-server
+    build:
+      context: ..
+      dockerfile: discovery-server/Dockerfile
+    ports:
+      - "8761:8761"
+    networks:
+      - devloger-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+
+  mysql-auth:
+    container_name: mysql-auth
+    image: mysql:8
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234
+      MYSQL_DATABASE: devloger_auth
+    networks:
+      - devloger-net
+    volumes:
+      - mysql-auth-data:/var/lib/mysql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  mysql-post:
+    container_name: mysql-post
+    image: mysql:8
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234
+      MYSQL_DATABASE: devloger_post
+    networks:
+      - devloger-net
+    volumes:
+      - mysql-post-data:/var/lib/mysql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+
+  auth-service:
+    container_name: auth-service
+    build:
+      context: ..
+      dockerfile: auth-service/Dockerfile
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mysql-auth
+      - eureka-server
+    networks:
+      - devloger-net
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-auth:3306/devloger_auth?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 1234
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  post-service:
+    container_name: post-service
+    build:
+      context: ..
+      dockerfile: post-service/Dockerfile
+    ports:
+      - "8082:8082"
+    depends_on:
+      - mysql-post
+      - eureka-server
+    networks:
+      - devloger-net
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-post:3306/devloger_post?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 1234
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  comment-service:
+    container_name: comment-service
+    build:
+      context: ..
+      dockerfile: comment-service/Dockerfile
+    ports:
+      - "8083:8083"
+    depends_on:
+      - eureka-server
+    networks:
+      - devloger-net
+    environment:
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+
+  api-gateway:
+    container_name: api-gateway
+    build:
+      context: ..
+      dockerfile: api-gateway/Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      - eureka-server
+    networks:
+      - devloger-net
+    environment:
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+
+networks:
+  devloger-net:
+    driver: bridge
+
+volumes:
+  mysql-auth-data:
+  mysql-post-data:
