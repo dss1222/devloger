@@ -1,0 +1,47 @@
+name: Deploy auth-service to GKE
+
+on:
+  push:
+    paths:
+      - 'auth-service/**'      # auth-service 디렉토리 변경만 감지
+    branches:
+      - main                   # main 브랜치에서만 트리거
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+
+      - name: Build with Gradle
+        run: ./gradlew :auth-service:bootJar
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v1
+
+      - name: Docker Build & Push
+        run: |
+          IMAGE=gcr.io/${{ secrets.PROJECT_ID }}/auth-service:$GITHUB_SHA
+          docker build -t $IMAGE -f auth-service/Dockerfile .
+          docker push $IMAGE
+
+      - name: Connect to GKE
+        run: |
+          gcloud container clusters get-credentials ${{ secrets.CLUSTER_NAME }} \
+            --region=${{ secrets.REGION }} --project=${{ secrets.PROJECT_ID }}
+
+      - name: Deploy to GKE
+        run: |
+          kubectl set image deployment/auth-service auth-service=gcr.io/${{ secrets.PROJECT_ID }}/auth-service:$GITHUB_SHA
