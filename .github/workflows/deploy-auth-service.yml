@@ -27,11 +27,12 @@ jobs:
 
       - name: Activate service account explicitly
         run: |
-          echo '${{ secrets.GCP_CREDENTIALS }}' > /tmp/key.json
+          echo "${{ secrets.GCP_CREDENTIALS_BASE64 }}" | base64 -d > /tmp/key.json
           gcloud auth activate-service-account --key-file=/tmp/key.json
           gcloud config set project ${{ secrets.PROJECT_ID }}
           gcloud config set compute/region ${{ secrets.REGION }}
           gcloud config set compute/zone ${{ secrets.ZONE }}
+
 
       - name: Authenticate Docker to Artifact Registry
         run: gcloud auth configure-docker asia-northeast3-docker.pkg.dev --quiet
