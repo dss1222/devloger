@@ -48,4 +48,5 @@ jobs:
 
       - name: Deploy to GKE
         run: |
-          kubectl set image deployment/auth-service auth-service=gcr.io/${{ secrets.PROJECT_ID }}/auth-service:$GITHUB_SHA
+          IMAGE=asia-northeast3-docker.pkg.dev/${{ secrets.PROJECT_ID }}/docker-repo/auth-service:$GITHUB_SHA
+          kubectl set image deployment/auth-service auth-service=$IMAGE
