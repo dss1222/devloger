@@ -9,6 +9,8 @@ COPY gradlew.bat .
 COPY build.gradle.kts .
 COPY settings.gradle.kts .
 
+RUN chmod +x ./gradlew
+
 # 서비스별 소스 복사
 COPY auth-service ./auth-service
 
