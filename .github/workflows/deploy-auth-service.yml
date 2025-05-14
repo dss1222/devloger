@@ -37,7 +37,7 @@ jobs:
 
       - name: Docker Build & Push
         run: |
-          IMAGE=gcr.io/${{ secrets.PROJECT_ID }}/auth-service:$GITHUB_SHA
+          IMAGE=asia-northeast3-docker.pkg.dev/${{ secrets.PROJECT_ID }}/docker-repo/auth-service:$GITHUB_SHA
           docker build -t $IMAGE -f auth-service/Dockerfile .
           docker push $IMAGE
 
